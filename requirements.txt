@@ -6,3 +6,4 @@ Werkzeug==2.3.7
 psycopg2-binary==2.9.10
 stripe==7.5.0
 flasgger==0.9.7.1
+gunicorn
