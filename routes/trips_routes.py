@@ -1,0 +1,142 @@
+from flask import Flask,request,jsonify,Blueprint
+from models import trips,db
+from flask_jwt_extended import jwt_required,get_jwt_identity
+from datetime import datetime
+from routes.role_req import role_required
+from routes.rate_limit import rate_limit
+trips_routes=Blueprint('trips',__name__)
+
+@trips_routes.route('/',methods=['GET'])
+def home():
+    return jsonify({"message":"Welcome to the trips API"}),200
+
+@trips_routes.route('/create_trip',methods=['POST'])
+@jwt_required()
+@role_required(['admin'])
+@rate_limit("3 per minute")
+def create_trip():
+    """
+    Create trip
+    ---
+    tags:
+      - Trips
+    security:
+      - Bearer: []
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            torist_place_id:
+              type: integer
+            hotel_id:
+              type: integer
+            restaurant_id:
+              type: integer
+            start_date:
+              type: string
+            end_date:
+              type: string
+    responses:
+      201:
+        description: Trip created
+    """
+    data=request.get_json()
+    start_date = datetime.strptime(data.get('start_date'), "%Y-%m-%d")
+    end_date = datetime.strptime(data.get('end_date'), "%Y-%m-%d")
+    trip=trips(
+        user_id=get_jwt_identity(),
+        torist_place_id=data.get('torist_place_id'),
+        hotel_id=data.get('hotel_id'),
+        restaurant_id=data.get('restaurant_id'),
+        start_date=start_date,
+        end_date=end_date
+    )
+    db.session.add(trip)
+    db.session.commit()
+    return jsonify({"message":"Trip created successfully"}),201
+
+@trips_routes.route('/get_trips_by_user_id',methods=['GET'])
+#@jwt_required()
+def get_trips_by_user_id():
+    user_id=get_jwt_identity()
+    trip=trips.query.filter_by(user_id=user_id).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_torist_place_id',methods=['GET'])
+#@jwt_required()
+def get_trips_by_torist_place_id():
+    torist_place_id=request.args.get('torist_place_id')
+    trip=trips.query.filter_by(torist_place_id=torist_place_id).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_hotel_id',methods=['GET'])
+#@jwt_required()
+def get_trips_by_hotel_id():
+    hotel_id=request.args.get('hotel_id')
+    trip=trips.query.filter_by(hotel_id=hotel_id).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_restaurant_id',methods=['GET'])
+#@jwt_required()
+def get_trips_by_restaurant_id():
+    restaurant_id=request.args.get('restaurant_id')
+    trip=trips.query.filter_by(restaurant_id=restaurant_id).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_start_date',methods=['GET'])
+#@jwt_required()
+def get_trips_by_start_date():
+    start_date=request.args.get('start_date')
+    trip=trips.query.filter_by(start_date=start_date).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_end_date',methods=['GET'])
+#@jwt_required()
+def get_trips_by_end_date():
+    end_date=request.args.get('end_date')
+    trip=trips.query.filter_by(end_date=end_date).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_created_at',methods=['GET'])
+#@jwt_required()
+def get_trips_by_created_at():
+    created_at=request.args.get('created_at')
+    trip=trips.query.filter_by(created_at=created_at).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_updated_at',methods=['GET'])
+#@jwt_required()
+def get_trips_by_updated_at():
+    updated_at=request.args.get('updated_at')
+    trip=trips.query.filter_by(updated_at=updated_at).all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/get_trips_by_created_at_range',methods=['GET'])
+#@jwt_required()
+def get_trips_by_created_at_range():
+    created_at_range=request.args.get('created_at_range')
+    try:
+        created_at_range=created_at_range.split('-')
+        created_at_range=[datetime.strptime(created_at,'%Y-%m-%d') for created_at in created_at_range]
+        trip=trips.query.filter(trips.created_at>=created_at_range[0],trips.created_at<=created_at_range[1]).all()
+        return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+    except ValueError:
+        return jsonify({"error":"Invalid created at range"}),400
+
+@trips_routes.route('/get_all_trips',methods=['GET'])
+#@jwt_required()
+def get_all_trips():
+    """
+    Get all trips
+    ---
+    tags:
+      - Trips
+    responses:
+      200:
+        description: List of trips
+    """
+    trip=trips.query.all()
+    return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
