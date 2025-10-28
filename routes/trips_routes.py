@@ -140,3 +140,116 @@ def get_all_trips():
     """
     trip=trips.query.all()
     return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
+
+@trips_routes.route('/update_trip/<int:trip_id>', methods=['PUT'])
+@jwt_required()
+@role_required(['user', 'admin'])
+@rate_limit("3 per minute")
+def update_trip(trip_id):
+    """
+    Update trip
+    ---
+    tags:
+      - Trips
+    security:
+      - Bearer: []
+    parameters:
+      - name: trip_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            torist_place_id:
+              type: integer
+            hotel_id:
+              type: integer
+            restaurant_id:
+              type: integer
+            start_date:
+              type: string
+            end_date:
+              type: string
+    responses:
+      200:
+        description: Trip updated
+      404:
+        description: Trip not found
+    """
+    try:
+        trip_obj = trips.query.get(trip_id)
+        if not trip_obj:
+            return jsonify({"error": "Trip not found"}), 404
+        
+        user_id = get_jwt_identity()
+        
+        # Check if user owns this trip
+        if str(trip_obj.user_id) != user_id:
+            return jsonify({"error": "Unauthorized"}), 403
+        
+        data = request.get_json()
+        
+        if data.get('torist_place_id') is not None:
+            trip_obj.torist_place_id = data.get('torist_place_id')
+        if data.get('hotel_id') is not None:
+            trip_obj.hotel_id = data.get('hotel_id')
+        if data.get('restaurant_id') is not None:
+            trip_obj.restaurant_id = data.get('restaurant_id')
+        if data.get('start_date'):
+            trip_obj.start_date = datetime.strptime(data.get('start_date'), "%Y-%m-%d")
+        if data.get('end_date'):
+            trip_obj.end_date = datetime.strptime(data.get('end_date'), "%Y-%m-%d")
+        
+        trip_obj.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({"message": "Trip updated successfully", "trip": trip_obj.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@trips_routes.route('/delete_trip/<int:trip_id>', methods=['DELETE'])
+@jwt_required()
+@role_required(['user', 'admin'])
+@rate_limit("3 per minute")
+def delete_trip(trip_id):
+    """
+    Delete trip
+    ---
+    tags:
+      - Trips
+    security:
+      - Bearer: []
+    parameters:
+      - name: trip_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Trip deleted
+      404:
+        description: Trip not found
+    """
+    try:
+        trip_obj = trips.query.get(trip_id)
+        if not trip_obj:
+            return jsonify({"error": "Trip not found"}), 404
+        
+        user_id = get_jwt_identity()
+        
+        # Check if user owns this trip
+        if str(trip_obj.user_id) != user_id:
+            return jsonify({"error": "Unauthorized"}), 403
+        
+        db.session.delete(trip_obj)
+        db.session.commit()
+        
+        return jsonify({"message": "Trip deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

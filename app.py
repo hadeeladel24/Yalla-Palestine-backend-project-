@@ -14,7 +14,7 @@ from flask_jwt_extended import JWTManager
 from authlib.integrations.flask_client import OAuth
 from routes.home import auth,homes
 from flasgger import Swagger
-
+from routes.rate_limit import L
 dotenv.load_dotenv()
 app=Flask(__name__)
 
@@ -25,8 +25,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 auth.init_app(app)
+L.init_app(app)
 jwt=JWTManager(app)
-print("JWT registered successfully ✅")
 
 # Swagger configuration
 swagger_config = {

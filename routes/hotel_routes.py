@@ -190,3 +190,104 @@ def get_hotels_by_rating_range():
         return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
     except ValueError:
         return jsonify({"error":"Invalid rating range"}),400
+
+@hotel_routes.route('/update_hotel/<int:hotel_id>', methods=['PUT'])
+@jwt_required()
+@role_required(['owner', 'admin'])
+@rate_limit("3 per minute")
+def update_hotel(hotel_id):
+    """
+    Update hotel
+    ---
+    tags:
+      - Hotels
+    security:
+      - Bearer: []
+    parameters:
+      - name: hotel_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            location:
+              type: string
+            rating:
+              type: number
+            price:
+              type: number
+    responses:
+      200:
+        description: Hotel updated
+      404:
+        description: Hotel not found
+    """
+    try:
+        hotel_obj = hotel.query.get(hotel_id)
+        if not hotel_obj:
+            return jsonify({"error": "Hotel not found"}), 404
+        
+        data = request.get_json()
+        
+        if data.get('name'):
+            hotel_obj.name = data.get('name')
+        if data.get('description'):
+            hotel_obj.description = data.get('description')
+        if data.get('location'):
+            hotel_obj.location = data.get('location')
+        if data.get('rating') is not None:
+            hotel_obj.rating = data.get('rating')
+        if data.get('price') is not None:
+            hotel_obj.price = data.get('price')
+        
+        hotel_obj.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({"message": "Hotel updated successfully", "hotel": hotel_obj.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@hotel_routes.route('/delete_hotel/<int:hotel_id>', methods=['DELETE'])
+@jwt_required()
+@role_required(['owner', 'admin'])
+@rate_limit("3 per minute")
+def delete_hotel(hotel_id):
+    """
+    Delete hotel
+    ---
+    tags:
+      - Hotels
+    security:
+      - Bearer: []
+    parameters:
+      - name: hotel_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Hotel deleted
+      404:
+        description: Hotel not found
+    """
+    try:
+        hotel_obj = hotel.query.get(hotel_id)
+        if not hotel_obj:
+            return jsonify({"error": "Hotel not found"}), 404
+        
+        db.session.delete(hotel_obj)
+        db.session.commit()
+        
+        return jsonify({"message": "Hotel deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

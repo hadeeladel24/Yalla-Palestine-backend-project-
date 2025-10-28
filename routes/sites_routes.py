@@ -149,4 +149,106 @@ def get_site_by_rating_range():
         return jsonify({"sites": [site.to_dict() for site in sites]}),200
     except ValueError:
         return jsonify({"error":"Invalid rating range"}),400
+
+@sites_routes.route('/update_site/<int:site_id>', methods=['PUT'])
+@jwt_required()
+@role_required(['owner', 'admin'])
+@rate_limit("3 per minute")
+def update_site(site_id):
+    """
+    Update tourist site
+    ---
+    tags:
+      - Sites
+    security:
+      - Bearer: []
+    parameters:
+      - name: site_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            location:
+              type: string
+            rating:
+              type: number
+            price:
+              type: number
+    responses:
+      200:
+        description: Site updated
+      404:
+        description: Site not found
+    """
+    try:
+        site = torist_place.query.get(site_id)
+        if not site:
+            return jsonify({"error": "Site not found"}), 404
+        
+        data = request.get_json()
+        
+        if data.get('name'):
+            site.name = data.get('name')
+        if data.get('description'):
+            site.description = data.get('description')
+        if data.get('location'):
+            site.location = data.get('location')
+        if data.get('rating') is not None:
+            site.rating = data.get('rating')
+        if data.get('price') is not None:
+            site.price = data.get('price')
+        
+        site.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({"message": "Site updated successfully", "site": site.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@sites_routes.route('/delete_site/<int:site_id>', methods=['DELETE'])
+@jwt_required()
+@role_required(['owner', 'admin'])
+@rate_limit("3 per minute")
+def delete_site(site_id):
+    """
+    Delete tourist site
+    ---
+    tags:
+      - Sites
+    security:
+      - Bearer: []
+    parameters:
+      - name: site_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Site deleted
+      404:
+        description: Site not found
+    """
+    try:
+        site = torist_place.query.get(site_id)
+        if not site:
+            return jsonify({"error": "Site not found"}), 404
+        
+        db.session.delete(site)
+        db.session.commit()
+        
+        return jsonify({"message": "Site deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
                                                             

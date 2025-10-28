@@ -158,3 +158,104 @@ def get_resturents_by_rating_range():
     except ValueError:
         return jsonify({"error":"Invalid rating range"}),400
 
+@resturent_routes.route('/update_resturent/<int:restaurant_id>', methods=['PUT'])
+@jwt_required()
+@role_required(['owner', 'admin'])
+@rate_limit("3 per minute")
+def update_resturent(restaurant_id):
+    """
+    Update restaurant
+    ---
+    tags:
+      - Restaurants
+    security:
+      - Bearer: []
+    parameters:
+      - name: restaurant_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            name:
+              type: string
+            description:
+              type: string
+            location:
+              type: string
+            rating:
+              type: number
+            price:
+              type: number
+    responses:
+      200:
+        description: Restaurant updated
+      404:
+        description: Restaurant not found
+    """
+    try:
+        restaurant_obj = restaurant.query.get(restaurant_id)
+        if not restaurant_obj:
+            return jsonify({"error": "Restaurant not found"}), 404
+        
+        data = request.get_json()
+        
+        if data.get('name'):
+            restaurant_obj.name = data.get('name')
+        if data.get('description'):
+            restaurant_obj.description = data.get('description')
+        if data.get('location'):
+            restaurant_obj.location = data.get('location')
+        if data.get('rating') is not None:
+            restaurant_obj.rating = data.get('rating')
+        if data.get('price') is not None:
+            restaurant_obj.price = data.get('price')
+        
+        restaurant_obj.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({"message": "Restaurant updated successfully", "restaurant": restaurant_obj.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@resturent_routes.route('/delete_resturent/<int:restaurant_id>', methods=['DELETE'])
+@jwt_required()
+@role_required(['owner', 'admin'])
+@rate_limit("3 per minute")
+def delete_resturent(restaurant_id):
+    """
+    Delete restaurant
+    ---
+    tags:
+      - Restaurants
+    security:
+      - Bearer: []
+    parameters:
+      - name: restaurant_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Restaurant deleted
+      404:
+        description: Restaurant not found
+    """
+    try:
+        restaurant_obj = restaurant.query.get(restaurant_id)
+        if not restaurant_obj:
+            return jsonify({"error": "Restaurant not found"}), 404
+        
+        db.session.delete(restaurant_obj)
+        db.session.commit()
+        
+        return jsonify({"message": "Restaurant deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+

@@ -158,4 +158,101 @@ def get_reviews_by_updated_at_range():
         reviews=review.query.filter(review.updated_at>=updated_at_range[0],review.updated_at<=updated_at_range[1]).all()
         return jsonify({"reviews": [review.to_dict() for review in reviews]}),200
     except ValueError:
-        return jsonify({"error":"Invalid updated at range"}),40
+        return jsonify({"error":"Invalid updated at range"}),400
+
+@reviews_routes.route('/update_review/<int:review_id>', methods=['PUT'])
+@jwt_required()
+def update_review(review_id):
+    """
+    Update review
+    ---
+    tags:
+      - Reviews
+    security:
+      - Bearer: []
+    parameters:
+      - name: review_id
+        in: path
+        type: integer
+        required: true
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            rating:
+              type: number
+            comment:
+              type: string
+    responses:
+      200:
+        description: Review updated
+      404:
+        description: Review not found
+    """
+    try:
+        review_obj = review.query.get(review_id)
+        if not review_obj:
+            return jsonify({"error": "Review not found"}), 404
+        
+        user_id = get_jwt_identity()
+        
+        # Check if user owns this review
+        if str(review_obj.user_id) != user_id:
+            return jsonify({"error": "Unauthorized"}), 403
+        
+        data = request.get_json()
+        
+        if data.get('rating') is not None:
+            review_obj.rating = data.get('rating')
+        if data.get('comment'):
+            review_obj.comment = data.get('comment')
+        
+        review_obj.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({"message": "Review updated successfully", "review": review_obj.to_dict()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+@reviews_routes.route('/delete_review/<int:review_id>', methods=['DELETE'])
+@jwt_required()
+def delete_review(review_id):
+    """
+    Delete review
+    ---
+    tags:
+      - Reviews
+    security:
+      - Bearer: []
+    parameters:
+      - name: review_id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Review deleted
+      404:
+        description: Review not found
+    """
+    try:
+        review_obj = review.query.get(review_id)
+        if not review_obj:
+            return jsonify({"error": "Review not found"}), 404
+        
+        user_id = get_jwt_identity()
+        
+        # Check if user owns this review
+        if str(review_obj.user_id) != user_id:
+            return jsonify({"error": "Unauthorized"}), 403
+        
+        db.session.delete(review_obj)
+        db.session.commit()
+        
+        return jsonify({"message": "Review deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
