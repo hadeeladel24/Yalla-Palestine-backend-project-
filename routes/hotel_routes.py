@@ -88,10 +88,10 @@ def get_hotel_by_id():
         description: Hotel data
     """
     hotel_id=request.args.get('hotel_id')
-    hotel=hotel.query.filter_by(id=hotel_id).first()
-    if not hotel:
+    hotel_obj=hotel.query.filter_by(id=hotel_id).first()
+    if not hotel_obj:
         return jsonify({"error":"Hotel not found"}),404
-    return jsonify({"hotel":hotel.to_dict()}),200
+    return jsonify({"hotel":hotel_obj.to_dict()}),200
 
 @hotel_routes.route('/get_all_hotels',methods=['GET'])
 def get_all_hotels():
@@ -104,18 +104,30 @@ def get_all_hotels():
       200:
         description: List of hotels
     """
-    hotels=hotel.query.all()
-    return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 10)), 100)
+        pagination = hotel.query.paginate(page=page, per_page=per_page, error_out=False)
+        items = [h.to_dict() for h in pagination.items]
+        return jsonify({
+            "hotels": items,
+            "pagination": {
+                "page": pagination.page,
+                "per_page": pagination.per_page,
+                "total": pagination.total,
+                "pages": pagination.pages
+            }
+        }),200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 
 @hotel_routes.route('/get_hotels_by_name',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_name():
     name=request.args.get('name')
     hotels=hotel.query.filter_by(name=name).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
 
 @hotel_routes.route('/get_hotels_by_location',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_location():
     """
     Get hotels by location
@@ -136,21 +148,18 @@ def get_hotels_by_location():
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
 
 @hotel_routes.route('/get_hotels_by_rating',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_rating():
     rating=request.args.get('rating')
     hotels=hotel.query.filter_by(rating=rating).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200       
 
 @hotel_routes.route('/get_hotels_by_price',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_price():
     price=request.args.get('price')
     hotels=hotel.query.filter_by(price=price).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
 
 @hotel_routes.route('/get_hotels_by_price_range',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_price_range():
     price_range=request.args.get('price_range')
     try:
@@ -162,7 +171,6 @@ def get_hotels_by_price_range():
         return jsonify({"error":"Invalid price range"}),400
 
 @hotel_routes.route('/get_hotels_by_date',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_date():
     date=request.args.get('date')
     hotels=hotel.query.filter_by(date=date).all()   
@@ -170,7 +178,6 @@ def get_hotels_by_date():
    
 
 @hotel_routes.route('/get_hotels_by_date_range',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_date_range():
     date_range=request.args.get('date_range')
     try:
@@ -182,7 +189,6 @@ def get_hotels_by_date_range():
         return jsonify({"error":"Invalid date range"}),400
 
 @hotel_routes.route('/get_hotels_by_updated_at_range',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_updated_at_range():
     updated_at_range=request.args.get('updated_at_range')
     try:
@@ -194,7 +200,6 @@ def get_hotels_by_updated_at_range():
         return jsonify({"error":"Invalid updated at range"}),400
 
 @hotel_routes.route('/get_hotels_by_rating_range',methods=['GET'])
-# @jwt_required()
 def get_hotels_by_rating_range():
     rating_range=request.args.get('rating_range')
     try:

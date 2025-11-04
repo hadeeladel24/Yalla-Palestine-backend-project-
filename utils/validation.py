@@ -73,3 +73,17 @@ def parse_date(value: str, field_name: str, fmt: str = '%Y-%m-%d'):
         raise ValidationError(f"{field_name} must match format {fmt}", 400)
 
 
+def validate_password_strength(password: str, min_length: int = 8):
+    if not isinstance(password, str) or len(password) < min_length:
+        raise ValidationError(f"Password must be at least {min_length} characters", 400)
+    # Require at least one lowercase, one uppercase, one digit, one special char
+    if not re.search(r"[a-z]", password):
+        raise ValidationError("Password must include a lowercase letter", 400)
+    if not re.search(r"[A-Z]", password):
+        raise ValidationError("Password must include an uppercase letter", 400)
+    if not re.search(r"\d", password):
+        raise ValidationError("Password must include a digit", 400)
+    if not re.search(r"[^A-Za-z0-9]", password):
+        raise ValidationError("Password must include a special character", 400)
+
+

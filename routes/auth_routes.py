@@ -8,8 +8,9 @@ import dotenv
 import jwt
 from routes.role_req import role_required
 from routes.rate_limit import rate_limit
-from flask import url_for
-from utils.validation import require_json, validate_fields, ValidationError
+from flask import url_for, current_app
+from utils.validation import require_json, validate_fields, ValidationError, validate_password_strength
+from flask_jwt_extended import decode_token
 
 
 from routes.home import auth
@@ -29,7 +30,7 @@ google = auth.register(
     api_base_url='https://www.googleapis.com/oauth2/v3/',
      server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'},
-    redirect_uri='http://127.0.0.1:5000/auth/authorize/google'
+    redirect_uri=os.getenv('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:5000/auth/authorize/google')
 )
 
 
@@ -77,6 +78,7 @@ def register():
         username = data.get('username').strip()
         email = data.get('email').strip().lower()
         password = data.get('password')
+        validate_password_strength(password, min_length=8)
         role = data.get('role', 'user')
 
         # Check duplicates
@@ -216,15 +218,32 @@ def refresh():
 
 @auth_routes.route('/logout',methods=['POST'])
 def logout():
-    data=request.get_json() #refresh token is in the request body so we need to get it from the request body              
-    refresh_token=data.get('refresh_token')
-    return jsonify({"message":"Logged out successfully"}),200
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'refresh_token': {'required': True, 'type': 'string'}
+        })
+        decoded = decode_token(data.get('refresh_token'))
+        jti = decoded.get('jti')
+        if not jti:
+            return jsonify({"success": False, "error": "Invalid token"}), 400
+        current_app.config['TOKEN_BLOCKLIST'].add(jti)
+        return jsonify({"message":"Logged out successfully"}),200
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Logout failed: {str(e)}"}), 400
 
 @auth_routes.route('/verify_token',methods=['POST'])
 def verify_token():
-    data=request.get_json()
-    access_token=data.get('access_token')
-    return jsonify({"message":"Token verified successfully"}),200
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {'token': {'required': True, 'type': 'string'}})
+        decoded = decode_token(data.get('token'))
+        jti = decoded.get('jti')
+        if jti in current_app.config['TOKEN_BLOCKLIST']:
+            return jsonify({"success": False, "error": "Token revoked"}), 401
+        return jsonify({"success": True, "message":"Token is valid", "claims": {"sub": decoded.get('sub'), "type": decoded.get('type')}}),200
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Invalid token: {str(e)}"}), 401
 
 @auth_routes.route('/get_user',methods=['GET'])
 @jwt_required()

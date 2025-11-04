@@ -45,6 +45,8 @@ class torist_place(db.Model):
             "rating":self.rating,
             "price":self.price
         }
+"""Non-breaking naming aliases"""
+tourist_place = torist_place
    
 
 

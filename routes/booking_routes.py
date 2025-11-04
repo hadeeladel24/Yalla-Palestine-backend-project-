@@ -101,7 +101,7 @@ def create_hotel_booking():
 
      
         payment_result = StripeService.create_payment_intent(
-            amount=int(bookings.total_price * 100),  
+            amount=bookings.total_price,  
             currency=bookings.currency.lower(),
             metadata={
                 'booking_id': bookings.id,
@@ -352,3 +352,58 @@ def confirm_payment(booking_id):
             'success': False,
             'message': f'Failed to confirm payment: {str(e)}'
         }), 500
+
+
+@booking_routes.route('/my', methods=['GET'])
+@jwt_required()
+def get_my_bookings():
+    """
+    List current user's bookings
+    ---
+    tags:
+      - Bookings
+    security:
+      - Bearer: []
+    parameters:
+      - name: page
+        in: query
+        type: integer
+        
+        required: false
+      - name: per_page
+        in: query
+        type: integer
+        required: false
+      - name: booking_type
+        in: query
+        type: string
+        required: false
+        description: filter by 'hotel' or 'restaurant'
+    responses:
+      200:
+        description: List of user's bookings
+    """
+    try:
+        user_id = get_jwt_identity()
+        page = int(request.args.get('page', 1))
+        per_page = min(int(request.args.get('per_page', 10)), 100)
+        btype = request.args.get('booking_type')
+
+        query = booking.query.filter_by(user_id=int(user_id))
+        if btype in ('hotel', 'restaurant'):
+            query = query.filter_by(booking_type=btype)
+
+        pagination = query.order_by(booking.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        items = [b.to_dict() for b in pagination.items]
+        return jsonify({
+            'success': True,
+            'bookings': items,
+            'pagination': {
+                'page': pagination.page,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'pages': pagination.pages
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

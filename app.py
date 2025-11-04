@@ -29,6 +29,11 @@ db.init_app(app)
 auth.init_app(app)
 L.init_app(app)
 jwt=JWTManager(app)
+app.config['TOKEN_BLOCKLIST'] = set()
+
+@jwt.token_in_blocklist_loader
+def is_token_revoked(jwt_header, jwt_payload):
+    return jwt_payload.get('jti') in app.config['TOKEN_BLOCKLIST']
 
 # Swagger configuration
 swagger_config = {

@@ -71,7 +71,6 @@ def create_site():
 
 
 @sites_routes.route('/get_sites',methods=['GET'])
-# @jwt_required()
 def get_sites():
     """
     Get all sites
@@ -86,7 +85,6 @@ def get_sites():
     return jsonify({"sites": [site.to_dict() for site in sites]}),200
 
 @sites_routes.route('/get_site_by_id',methods=['GET'])
-# @jwt_required()
 def get_site_by_id():
     """
     Get site by ID
@@ -104,45 +102,41 @@ def get_site_by_id():
     """
     id=request.args.get('id')
     site=torist_place.query.filter_by(id=id).first()
+    if not site:
+        return jsonify({"success": False, "error": "Site not found"}),404
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_name',methods=['GET'])
-# @jwt_required()
 def get_site_by_name():
     name=request.args.get('name')
     site=torist_place.query.filter_by(name=name).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_location',methods=['GET'])
-# @jwt_required()
 def get_site_by_location():
     location=request.args.get('location')
     site=torist_place.query.filter_by(location=location).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_description',methods=['GET'])
-# @jwt_required()
 def get_site_by_description():
     description=request.args.get('description')
     site=torist_place.query.filter_by(description=description).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_created_at',methods=['GET'])
-# @jwt_required()
 def get_site_by_created_at():
     created_at=request.args.get('created_at')
     site=torist_place.query.filter_by(created_at=created_at).first()    
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_updated_at',methods=['GET'])
-# @jwt_required()
 def get_site_by_updated_at():
     updated_at=request.args.get('updated_at')
     site=torist_place.query.filter_by(updated_at=updated_at).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_rating_range',methods=['GET'])
-#@jwt_required()
 def get_site_by_rating_range():
     rating_range=request.args.get('rating_range')
     try:
