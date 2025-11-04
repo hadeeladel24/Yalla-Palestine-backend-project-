@@ -81,11 +81,36 @@ def get_sites():
       200:
         description: List of sites
     """
+    """
+    Get all sites
+    ---
+    tags:
+      - Sites
+    responses:
+      200:
+        description: List of sites
+    """
     sites=torist_place.query.all()
     return jsonify({"sites": [site.to_dict() for site in sites]}),200
 
 @sites_routes.route('/get_site_by_id',methods=['GET'])
 def get_site_by_id():
+    """
+    Get site by ID
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: id
+        in: query
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Site data
+      404:
+        description: Not found
+    """
     """
     Get site by ID
     ---
@@ -108,36 +133,125 @@ def get_site_by_id():
 
 @sites_routes.route('/get_site_by_name',methods=['GET'])
 def get_site_by_name():
+    """
+    Get site by name
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: name
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: Site data
+    """
     name=request.args.get('name')
     site=torist_place.query.filter_by(name=name).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_location',methods=['GET'])
 def get_site_by_location():
+    """
+    Get site by location
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: location
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: Site data
+    """
     location=request.args.get('location')
     site=torist_place.query.filter_by(location=location).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_description',methods=['GET'])
 def get_site_by_description():
+    """
+    Get site by description
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: description
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: Site data
+    """
     description=request.args.get('description')
     site=torist_place.query.filter_by(description=description).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_created_at',methods=['GET'])
 def get_site_by_created_at():
+    """
+    Get site by created_at
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: created_at
+        in: query
+        type: string
+        required: true
+        description: YYYY-MM-DD
+    responses:
+      200:
+        description: Site data
+    """
     created_at=request.args.get('created_at')
     site=torist_place.query.filter_by(created_at=created_at).first()    
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_updated_at',methods=['GET'])
 def get_site_by_updated_at():
+    """
+    Get site by updated_at
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: updated_at
+        in: query
+        type: string
+        required: true
+        description: YYYY-MM-DD
+    responses:
+      200:
+        description: Site data
+    """
     updated_at=request.args.get('updated_at')
     site=torist_place.query.filter_by(updated_at=updated_at).first()
     return jsonify({"site": site.to_dict()}),200
 
 @sites_routes.route('/get_site_by_rating_range',methods=['GET'])
 def get_site_by_rating_range():
+    """
+    Get sites by rating range
+    ---
+    tags:
+      - Sites
+    parameters:
+      - name: rating_range
+        in: query
+        type: string
+        required: true
+        description: "min-max"
+    responses:
+      200:
+        description: List of sites
+      400:
+        description: Invalid range
+    """
     rating_range=request.args.get('rating_range')
     try:
         rating_range=rating_range.split('-')

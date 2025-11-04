@@ -106,6 +106,20 @@ def get_reviews_by_hotel_id():
 @reviews_routes.route('/get_reviews_by_restaurant_id',methods=['GET'])
 
 def get_reviews_by_restaurant_id():
+    """
+    Get reviews by restaurant ID
+    ---
+    tags:
+      - Reviews
+    parameters:
+      - name: restaurant_id
+        in: query
+        type: integer
+        required: true
+    responses:
+      200:
+        description: List of reviews
+    """
     restaurant_id=request.args.get('restaurant_id')
     reviews=review.query.filter_by(restaurant_id=restaurant_id).all()               
     return jsonify({"reviews": [review.to_dict() for review in reviews]}),200
@@ -132,6 +146,21 @@ def get_reviews_by_created_at():
 
 @reviews_routes.route('/get_reviews_by_updated_at',methods=['GET'])
 def get_reviews_by_updated_at():
+    """
+    Get reviews by updated_at
+    ---
+    tags:
+      - Reviews
+    parameters:
+      - name: updated_at
+        in: query
+        type: string
+        required: true
+        description: YYYY-MM-DD
+    responses:
+      200:
+        description: List of reviews
+    """
     updated_at=request.args.get('updated_at')
     reviews=review.query.filter_by(updated_at=updated_at).all()                       
     return jsonify({"reviews": [review.to_dict() for review in reviews]}),200

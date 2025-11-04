@@ -218,6 +218,26 @@ def refresh():
 
 @auth_routes.route('/logout',methods=['POST'])
 def logout():
+    """
+    Logout by revoking refresh token
+    ---
+    tags:
+      - Auth
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            refresh_token:
+              type: string
+    responses:
+      200:
+        description: Logged out
+      400:
+        description: Invalid token
+    """
     try:
         data = require_json(request.get_json())
         validate_fields(data, {
@@ -234,6 +254,26 @@ def logout():
 
 @auth_routes.route('/verify_token',methods=['POST'])
 def verify_token():
+    """
+    Verify token validity and revocation status
+    ---
+    tags:
+      - Auth
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+    responses:
+      200:
+        description: Token valid
+      401:
+        description: Token invalid or revoked
+    """
     try:
         data = require_json(request.get_json())
         validate_fields(data, {'token': {'required': True, 'type': 'string'}})

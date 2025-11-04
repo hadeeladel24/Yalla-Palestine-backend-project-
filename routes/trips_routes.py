@@ -79,6 +79,15 @@ def create_trip():
 @trips_routes.route('/get_trips_by_user_id',methods=['GET'])
 #@jwt_required()
 def get_trips_by_user_id():
+    """
+    Get trips by current user
+    ---
+    tags:
+      - Trips
+    responses:
+      200:
+        description: List of trips
+    """
     user_id=get_jwt_identity()
     trip=trips.query.filter_by(user_id=user_id).all()
     return jsonify({"trips": [trip.to_dict() for trip in trip]}),200
@@ -147,6 +156,15 @@ def get_trips_by_created_at_range():
 @trips_routes.route('/get_all_trips',methods=['GET'])
 #@jwt_required()
 def get_all_trips():
+    """
+    Get all trips
+    ---
+    tags:
+      - Trips
+    responses:
+      200:
+        description: List of trips
+    """
     """
     Get all trips
     ---

@@ -106,18 +106,60 @@ def get_all_resturents():
 
 @resturent_routes.route('/get_resturents_by_name',methods=['GET'])
 def get_resturents_by_name():
+    """
+    Get restaurants by name
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: name
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of restaurants
+    """
     name=request.args.get('name')
     resturents=restaurant.query.filter_by(name=name).all()
     return jsonify({"resturents": [resturent.to_dict() for resturent in resturents]}),200
 
 @resturent_routes.route('/get_resturents_by_location',methods=['GET'])
 def get_resturents_by_location():
+    """
+    Get restaurants by location
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: location
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of restaurants
+    """
     location=request.args.get('location')
     resturents=restaurant.query.filter_by(location=location).all()          
     return jsonify({"resturents": [resturent.to_dict() for resturent in resturents]}),200
 
 @resturent_routes.route('/get_resturents_by_rating',methods=['GET'])
 def get_resturents_by_rating():
+    """
+    Get restaurants by rating
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: rating
+        in: query
+        type: number
+        required: true
+    responses:
+      200:
+        description: List of restaurants
+    """
     rating=request.args.get('rating')
     resturents=restaurant.query.filter_by(rating=rating).all()
     return jsonify({"resturents": [resturent.to_dict() for resturent in resturents]}),200
@@ -125,6 +167,20 @@ def get_resturents_by_rating():
 @resturent_routes.route('/get_resturents_by_price',methods=['GET'])     
 
 def get_resturents_by_price():
+    """
+    Get restaurants by exact price
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: price
+        in: query
+        type: number
+        required: true
+    responses:
+      200:
+        description: List of restaurants
+    """
     price=request.args.get('price')
     resturents=restaurant.query.filter_by(price=price).all()
     return jsonify({"resturents": [resturent.to_dict() for resturent in resturents]}),200
@@ -132,6 +188,23 @@ def get_resturents_by_price():
 @resturent_routes.route('/get_resturents_by_price_range',methods=['GET'])
 
 def get_resturents_by_price_range():
+    """
+    Get restaurants by price range
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: price_range
+        in: query
+        type: string
+        required: true
+        description: "min-max"
+    responses:
+      200:
+        description: List of restaurants
+      400:
+        description: Invalid range
+    """
     price_range=request.args.get('price_range')
     try:
         price_range=price_range.split('-')
@@ -144,6 +217,21 @@ def get_resturents_by_price_range():
 @resturent_routes.route('/get_resturents_by_date',methods=['GET'])
 
 def get_resturents_by_date():
+    """
+    Get restaurants by created date
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: date
+        in: query
+        type: string
+        required: true
+        description: YYYY-MM-DD
+    responses:
+      200:
+        description: List of restaurants
+    """
     date=request.args.get('date')
     resturents=restaurant.query.filter_by(created_at=date).all()              
     return jsonify({"resturents": [resturent.to_dict() for resturent in resturents]}),200
@@ -151,6 +239,23 @@ def get_resturents_by_date():
 @resturent_routes.route('/get_resturents_by_updated_at_range',methods=['GET'])
 
 def get_resturents_by_updated_at_range():
+    """
+    Get restaurants by updated date range
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: updated_at_range
+        in: query
+        type: string
+        required: true
+        description: "YYYY-MM-DD-YYYY-MM-DD"
+    responses:
+      200:
+        description: List of restaurants
+      400:
+        description: Invalid range
+    """
     updated_at_range=request.args.get('updated_at_range')
     try:
         updated_at_range=updated_at_range.split('-')
@@ -163,6 +268,23 @@ def get_resturents_by_updated_at_range():
 @resturent_routes.route('/get_resturents_by_rating_range',methods=['GET'])
 
 def get_resturents_by_rating_range():
+    """
+    Get restaurants by rating range
+    ---
+    tags:
+      - Restaurants
+    parameters:
+      - name: rating_range
+        in: query
+        type: string
+        required: true
+        description: "min-max"
+    responses:
+      200:
+        description: List of restaurants
+      400:
+        description: Invalid range
+    """
     rating_range=request.args.get('rating_range')
     try:
         rating_range=rating_range.split('-')

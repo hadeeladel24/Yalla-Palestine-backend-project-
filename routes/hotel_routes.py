@@ -123,6 +123,20 @@ def get_all_hotels():
 
 @hotel_routes.route('/get_hotels_by_name',methods=['GET'])
 def get_hotels_by_name():
+    """
+    Get hotels by name
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: name
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of hotels
+    """
     name=request.args.get('name')
     hotels=hotel.query.filter_by(name=name).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
@@ -143,24 +157,83 @@ def get_hotels_by_location():
       200:
         description: List of hotels
     """
+    """
+    Get hotels by location
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: location
+        in: query
+        type: string
+        required: true
+    responses:
+      200:
+        description: List of hotels
+    """
     location=request.args.get('location')
     hotels=hotel.query.filter_by(location=location).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
 
 @hotel_routes.route('/get_hotels_by_rating',methods=['GET'])
 def get_hotels_by_rating():
+    """
+    Get hotels by rating
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: rating
+        in: query
+        type: number
+        required: true
+    responses:
+      200:
+        description: List of hotels
+    """
     rating=request.args.get('rating')
     hotels=hotel.query.filter_by(rating=rating).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200       
 
 @hotel_routes.route('/get_hotels_by_price',methods=['GET'])
 def get_hotels_by_price():
+    """
+    Get hotels by exact price
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: price
+        in: query
+        type: number
+        required: true
+    responses:
+      200:
+        description: List of hotels
+    """
     price=request.args.get('price')
     hotels=hotel.query.filter_by(price=price).all()
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
 
 @hotel_routes.route('/get_hotels_by_price_range',methods=['GET'])
 def get_hotels_by_price_range():
+    """
+    Get hotels by price range
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: price_range
+        in: query
+        type: string
+        required: true
+        description: "min-max"
+    responses:
+      200:
+        description: List of hotels
+      400:
+        description: Invalid range
+    """
     price_range=request.args.get('price_range')
     try:
         price_range=price_range.split('-')
@@ -172,6 +245,21 @@ def get_hotels_by_price_range():
 
 @hotel_routes.route('/get_hotels_by_date',methods=['GET'])
 def get_hotels_by_date():
+    """
+    Get hotels by created date
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: date
+        in: query
+        type: string
+        required: true
+        description: YYYY-MM-DD
+    responses:
+      200:
+        description: List of hotels
+    """
     date=request.args.get('date')
     hotels=hotel.query.filter_by(date=date).all()   
     return jsonify({"hotels": [hotel.to_dict() for hotel in hotels]}),200
@@ -179,6 +267,23 @@ def get_hotels_by_date():
 
 @hotel_routes.route('/get_hotels_by_date_range',methods=['GET'])
 def get_hotels_by_date_range():
+    """
+    Get hotels by created date range
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: date_range
+        in: query
+        type: string
+        required: true
+        description: "YYYY-MM-DD-YYYY-MM-DD"
+    responses:
+      200:
+        description: List of hotels
+      400:
+        description: Invalid range
+    """
     date_range=request.args.get('date_range')
     try:
         date_range=date_range.split('-')
@@ -190,6 +295,23 @@ def get_hotels_by_date_range():
 
 @hotel_routes.route('/get_hotels_by_updated_at_range',methods=['GET'])
 def get_hotels_by_updated_at_range():
+    """
+    Get hotels by updated date range
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: updated_at_range
+        in: query
+        type: string
+        required: true
+        description: "YYYY-MM-DD-YYYY-MM-DD"
+    responses:
+      200:
+        description: List of hotels
+      400:
+        description: Invalid range
+    """
     updated_at_range=request.args.get('updated_at_range')
     try:
         updated_at_range=updated_at_range.split('-')
@@ -201,6 +323,23 @@ def get_hotels_by_updated_at_range():
 
 @hotel_routes.route('/get_hotels_by_rating_range',methods=['GET'])
 def get_hotels_by_rating_range():
+    """
+    Get hotels by rating range
+    ---
+    tags:
+      - Hotels
+    parameters:
+      - name: rating_range
+        in: query
+        type: string
+        required: true
+        description: "min-max"
+    responses:
+      200:
+        description: List of hotels
+      400:
+        description: Invalid range
+    """
     rating_range=request.args.get('rating_range')
     try:
         rating_range=rating_range.split('-')
