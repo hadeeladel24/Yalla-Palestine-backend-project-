@@ -3,6 +3,7 @@ from models import review,db
 from flask_jwt_extended import jwt_required,get_jwt_identity
 from datetime import datetime
 from routes.role_req import role_required
+from utils.validation import require_json, validate_fields, ValidationError
 reviews_routes=Blueprint('reviews',__name__)
 
 @reviews_routes.route('/',methods=['GET'])
@@ -41,18 +42,35 @@ def create_review():
       201:
         description: Review created
     """
-    data=request.get_json()
-    review=review(
-        user_id=get_jwt_identity(),
-        torist_place_id=data.get('torist_place_id'),
-        hotel_id=data.get('hotel_id'),
-        restaurant_id=data.get('restaurant_id'),
-        rating=data.get('rating'),
-        comment=data.get('comment')
-    )
-    db.session.add(review)
-    db.session.commit()
-    return jsonify({"message":"Review created successfully"}),201
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'rating': {'required': True, 'type': 'number', 'min': 0, 'max': 5},
+            'comment': {'required': True, 'type': 'string', 'min_length': 1, 'max_length': 200},
+            'torist_place_id': {'required': False, 'type': 'integer'},
+            'hotel_id': {'required': False, 'type': 'integer'},
+            'restaurant_id': {'required': False, 'type': 'integer'}
+        })
+
+        if not any([data.get('torist_place_id'), data.get('hotel_id'), data.get('restaurant_id')]):
+            raise ValidationError('One of torist_place_id, hotel_id, or restaurant_id is required', 400)
+
+        review_obj = review(
+            user_id=get_jwt_identity(),
+            torist_place_id=data.get('torist_place_id'),
+            hotel_id=data.get('hotel_id'),
+            restaurant_id=data.get('restaurant_id'),
+            rating=data.get('rating'),
+            comment=data.get('comment').strip()
+        )
+        db.session.add(review_obj)
+        db.session.commit()
+        return jsonify({"message":"Review created successfully", "review": review_obj.to_dict()}),201
+    except ValidationError as e:
+        return jsonify({"error": e.message}), e.status_code
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @reviews_routes.route('/get_reviews_by_user_id',methods=['GET'])
 @jwt_required()

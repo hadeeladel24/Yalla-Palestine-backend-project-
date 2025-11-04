@@ -14,6 +14,8 @@ from flask_jwt_extended import JWTManager
 from authlib.integrations.flask_client import OAuth
 from routes.home import auth,homes
 from flasgger import Swagger
+from werkzeug.exceptions import BadRequest, Unauthorized, Forbidden, NotFound, MethodNotAllowed, UnprocessableEntity, TooManyRequests
+from utils.validation import ValidationError
 from routes.rate_limit import L
 dotenv.load_dotenv()
 app=Flask(__name__)
@@ -77,6 +79,52 @@ app.register_blueprint(reviews_routes,url_prefix='/reviews')
 app.register_blueprint(sites_routes,url_prefix='/sites')
 app.register_blueprint(trips_routes,url_prefix='/trips')
 app.register_blueprint(homes,url_prefix='/')
+
+
+# Global error handlers returning consistent JSON
+@app.errorhandler(ValidationError)
+def handle_validation_error(err: ValidationError):
+    return jsonify({"success": False, "error": err.message}), err.status_code
+
+
+@app.errorhandler(BadRequest)
+def handle_bad_request(err):
+    return jsonify({"success": False, "error": "Bad request"}), 400
+
+
+@app.errorhandler(Unauthorized)
+def handle_unauthorized(err):
+    return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+
+@app.errorhandler(Forbidden)
+def handle_forbidden(err):
+    return jsonify({"success": False, "error": "Forbidden"}), 403
+
+
+@app.errorhandler(NotFound)
+def handle_not_found(err):
+    return jsonify({"success": False, "error": "Not found"}), 404
+
+
+@app.errorhandler(MethodNotAllowed)
+def handle_method_not_allowed(err):
+    return jsonify({"success": False, "error": "Method not allowed"}), 405
+
+
+@app.errorhandler(UnprocessableEntity)
+def handle_unprocessable(err):
+    return jsonify({"success": False, "error": "Unprocessable entity"}), 422
+
+
+@app.errorhandler(TooManyRequests)
+def handle_too_many(err):
+    return jsonify({"success": False, "error": "Too many requests"}), 429
+
+
+@app.errorhandler(Exception)
+def handle_generic_error(err):
+    return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
 if __name__=="__main__":

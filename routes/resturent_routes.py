@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required,get_jwt_identity
 from datetime import datetime
 from routes.role_req import role_required
 from routes.rate_limit import rate_limit
+from utils.validation import require_json, validate_fields
 resturent_routes=Blueprint('resturent',__name__)
 
 @resturent_routes.route('/',methods=['GET'])
@@ -43,16 +44,29 @@ def create_resturent():
       201:
         description: Restaurant created
     """
-    data=request.get_json()
-    name=data.get('name')
-    description=data.get('description')
-    location=data.get('location')
-    rating=data.get('rating')
-    price=data.get('price')
-    resturent=restaurant(name=name,description=description,location=location,rating=rating,price=price)
-    db.session.add(resturent)
-    db.session.commit()
-    return jsonify({"message":"Resturent created successfully"}),201
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'name': {'required': True, 'type': 'string', 'min_length': 2, 'max_length': 100},
+            'description': {'required': True, 'type': 'string', 'min_length': 5, 'max_length': 200},
+            'location': {'required': True, 'type': 'string', 'min_length': 2, 'max_length': 100},
+            'rating': {'required': True, 'type': 'number', 'min': 0, 'max': 5},
+            'price': {'required': True, 'type': 'number', 'min': 0}
+        })
+
+        resturent=restaurant(
+            name=data.get('name').strip(),
+            description=data.get('description').strip(),
+            location=data.get('location').strip(),
+            rating=data.get('rating'),
+            price=data.get('price')
+        )
+        db.session.add(resturent)
+        db.session.commit()
+        return jsonify({"message":"Resturent created successfully", "restaurant": resturent.to_dict()}),201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
 
 @resturent_routes.route('/get_resturent_by_id',methods=['GET'])
 def get_resturent_by_id():

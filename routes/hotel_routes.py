@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required,get_jwt_identity
 from datetime import datetime
 from routes.rate_limit import rate_limit
 from routes.role_req import role_required
+from utils.validation import require_json, validate_fields
 hotel_routes=Blueprint('hotel',__name__)
 
 @hotel_routes.route('/',methods=['GET'])
@@ -43,16 +44,29 @@ def create_hotel():
       201:
         description: Hotel created
     """
-    data=request.get_json()
-    name=data.get('name')
-    description=data.get('description')
-    location=data.get('location')
-    rating=data.get('rating')
-    price=data.get('price')
-    new_hotel=hotel(name=name,description=description,location=location,rating=rating,price=price)
-    db.session.add(new_hotel)
-    db.session.commit()
-    return jsonify({"message":"Hotel created successfully"}),201
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'name': {'required': True, 'type': 'string', 'min_length': 2, 'max_length': 100},
+            'description': {'required': True, 'type': 'string', 'min_length': 5, 'max_length': 200},
+            'location': {'required': True, 'type': 'string', 'min_length': 2, 'max_length': 100},
+            'rating': {'required': True, 'type': 'number', 'min': 0, 'max': 5},
+            'price': {'required': True, 'type': 'number', 'min': 0}
+        })
+
+        new_hotel=hotel(
+            name=data.get('name').strip(),
+            description=data.get('description').strip(),
+            location=data.get('location').strip(),
+            rating=data.get('rating'),
+            price=data.get('price')
+        )
+        db.session.add(new_hotel)
+        db.session.commit()
+        return jsonify({"message":"Hotel created successfully", "hotel": new_hotel.to_dict()}),201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 400
 
 @hotel_routes.route('/get_hotel_by_id',methods=['GET'])
 @jwt_required()

@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required,get_jwt_identity
 from datetime import datetime
 from routes.role_req import role_required
 from routes.rate_limit import rate_limit
+from utils.validation import require_json, validate_fields, parse_date, ValidationError
 trips_routes=Blueprint('trips',__name__)
 
 @trips_routes.route('/',methods=['GET'])
@@ -43,20 +44,37 @@ def create_trip():
       201:
         description: Trip created
     """
-    data=request.get_json()
-    start_date = datetime.strptime(data.get('start_date'), "%Y-%m-%d")
-    end_date = datetime.strptime(data.get('end_date'), "%Y-%m-%d")
-    trip=trips(
-        user_id=get_jwt_identity(),
-        torist_place_id=data.get('torist_place_id'),
-        hotel_id=data.get('hotel_id'),
-        restaurant_id=data.get('restaurant_id'),
-        start_date=start_date,
-        end_date=end_date
-    )
-    db.session.add(trip)
-    db.session.commit()
-    return jsonify({"message":"Trip created successfully"}),201
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'start_date': {'required': True, 'type': 'string'},
+            'end_date': {'required': True, 'type': 'string'},
+            'torist_place_id': {'required': False, 'type': 'integer'},
+            'hotel_id': {'required': False, 'type': 'integer'},
+            'restaurant_id': {'required': False, 'type': 'integer'}
+        })
+
+        start_date = parse_date(data.get('start_date'), 'start_date')
+        end_date = parse_date(data.get('end_date'), 'end_date')
+        if start_date >= end_date:
+            raise ValidationError('end_date must be after start_date', 400)
+
+        trip=trips(
+            user_id=get_jwt_identity(),
+            torist_place_id=data.get('torist_place_id'),
+            hotel_id=data.get('hotel_id'),
+            restaurant_id=data.get('restaurant_id'),
+            start_date=start_date,
+            end_date=end_date
+        )
+        db.session.add(trip)
+        db.session.commit()
+        return jsonify({"message":"Trip created successfully", "trip": trip.to_dict()}),201
+    except ValidationError as e:
+        return jsonify({"error": e.message}), e.status_code
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 @trips_routes.route('/get_trips_by_user_id',methods=['GET'])
 #@jwt_required()

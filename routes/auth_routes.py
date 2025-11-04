@@ -9,6 +9,7 @@ import jwt
 from routes.role_req import role_required
 from routes.rate_limit import rate_limit
 from flask import url_for
+from utils.validation import require_json, validate_fields, ValidationError
 
 
 from routes.home import auth
@@ -64,19 +65,38 @@ def register():
       201:
         description: User registered
     """
-    data = request.get_json()
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    role = data.get('role') 
+    try:
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'username': {'required': True, 'type': 'string', 'min_length': 3, 'max_length': 50},
+            'email': {'required': True, 'type': 'string', 'format': 'email', 'max_length': 100},
+            'password': {'required': True, 'type': 'string', 'min_length': 6, 'max_length': 100},
+            'role': {'required': False, 'type': 'string', 'allowed': ['user', 'owner', 'guest', 'admin']}
+        })
 
-    hashed_password = generate_password_hash(password=password)
+        username = data.get('username').strip()
+        email = data.get('email').strip().lower()
+        password = data.get('password')
+        role = data.get('role', 'user')
 
-    user = User(username=username, email=email, password=hashed_password, role=role)
-    db.session.add(user)
-    db.session.commit()
+        # Check duplicates
+        if User.query.filter_by(email=email).first() is not None:
+            raise ValidationError('Email already registered', 409)
+        if User.query.filter_by(username=username).first() is not None:
+            raise ValidationError('Username already taken', 409)
 
-    return jsonify({"message": "User registered successfully"}), 201
+        hashed_password = generate_password_hash(password=password)
+
+        user = User(username=username, email=email, password=hashed_password, role=role)
+        db.session.add(user)
+        db.session.commit()
+
+        return jsonify({"message": "User registered successfully"}), 201
+    except ValidationError as e:
+        return jsonify({"success": False, "message": e.message}), e.status_code
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Registration failed: {str(e)}"}), 500
 
 
 @auth_routes.route('/login/google')
@@ -136,31 +156,14 @@ def login():
     """
     try:
         # Check if JSON data exists
-        data = request.get_json()
-        if not data:
-            return jsonify({
-                "success": False,
-                "message": "No data provided"
-            }), 400
-        
-       
-        email = data.get('email')
-        if not email:
-            return jsonify({
-                "success": False,
-                "message": "Email is required"
-            }), 400
-        
-        # Get and validate password
+        data = require_json(request.get_json())
+        validate_fields(data, {
+            'email': {'required': True, 'type': 'string', 'format': 'email'},
+            'password': {'required': True, 'type': 'string', 'min_length': 6}
+        })
+
+        email = data.get('email').strip().lower()
         password = data.get('password')
-        if not password:
-            return jsonify({
-                "success": False,
-                "message": "Password is required"
-            }), 400
-        
-        # Clean email (remove spaces, lowercase)
-        email = email.strip().lower()
         
         # Find user by email
         user = User.query.filter_by(email=email).first()
